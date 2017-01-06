@@ -127,6 +127,7 @@ public class Collectors extends JFrame implements Runnable {
 			collector.adjustFitness(-1/ticksPerGeneration);
 			
 			Coin nearestCoin = null;
+			nearestCoin = findNearestCoin(collector);
 			if(collector.hasCoin()) {
 				if(collector.distanceTo(center) < 10) {
 					collector.setHasCoin(false);
@@ -135,12 +136,10 @@ public class Collectors extends JFrame implements Runnable {
 					coins.add(coin);
 					nearestCoin = findNearestCoin(collector);
 				}
-			} else {
-				nearestCoin = findNearestCoin(collector);
 			}
 			
 			float[] networkInput = new float[] {
-					collector.hasCoin() ? 0 : (float) Math.atan2(collector.getX() - nearestCoin.getX(), collector.getY() - nearestCoin.getY()),
+					nearestCoin == null ? 0 : (float) Math.atan2(collector.getX() - nearestCoin.getX(), collector.getY() - nearestCoin.getY()),
 					(float) Math.atan2(collector.getX() - center.getX(), collector.getY() - center.getY()),
 					collector.hasCoin() ? 1 : 0
 			};
@@ -148,8 +147,8 @@ public class Collectors extends JFrame implements Runnable {
 			float[] output = collector.feed(networkInput);
 			float angleAdjustment = (output[0] - .5f) * 0.1f;
 			collector.adjustAngle(angleAdjustment);
-			float dX = (float) Math.cos(collector.getAngle());
-			float dY = (float) Math.sin(collector.getAngle());
+			float dX = (float) Math.cos(collector.getAngle()) * output[1];
+			float dY = (float) Math.sin(collector.getAngle()) * output[1];
 			collector.move(dX, dY);
 			
 			//Keep in boundaries
@@ -217,10 +216,11 @@ public class Collectors extends JFrame implements Runnable {
 				bestDistance = distance;
 				nearestCoin = coin;
 			}
-			if(distance < 10) {
+			if(!collector.hasCoin() && distance < 10) {
 				collector.setHasCoin(true);
 				collector.adjustFitness(0.1f);
 				toRemove = coin;
+				break;
 			}
 		}
 		if(toRemove != null) coins.remove(toRemove);
