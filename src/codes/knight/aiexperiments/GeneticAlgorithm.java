@@ -24,8 +24,8 @@ public class GeneticAlgorithm<T extends Agent> {
 			Network networkB = parentB.getNetwork();
 			
 			//If parents are too weak, create new genes
-			if(parentA.getFitness() < 0) networkA.randomize(-1, 1);
-			if(parentB.getFitness() < 0) networkB.randomize(-1, 1);
+			if(parentA.getFitness() < 0.05f) networkA.randomize(-1, 1);
+			if(parentB.getFitness() < 0.05f) networkB.randomize(-1, 1);
 			
 			Network child = breed(networkA, networkB);
 			newGeneration.add(child);
@@ -114,6 +114,7 @@ public class GeneticAlgorithm<T extends Agent> {
 		int selection = 0;
 		T choice = null;
 		do {
+			if(selection > agents.size()) break;
 			choice = agents.get(selection);
 			weightChoice -= choice.getFitness();
 			selection++;

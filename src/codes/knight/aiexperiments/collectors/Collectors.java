@@ -25,7 +25,8 @@ public class Collectors extends JFrame implements Runnable {
 	private ArrayList<Coin> coins;
 	private Center center;
 	private long tickCount = 0;
-	private int ticksPerGeneration = 100000;
+	private int ticksPerGeneration = 20000;
+	private int generations = 0;
 	
 	private int frameRateCap = 60;
 	private int framesThisSecond = 0;
@@ -82,6 +83,7 @@ public class Collectors extends JFrame implements Runnable {
 		while(running) {
 //			delta = System.currentTimeMillis() - lastTime;
 			if(tickCount % ticksPerGeneration == 0) {
+				generations++;
 				GeneticAlgorithm<Collector> ga = new GeneticAlgorithm<Collector>(collectors);
 				float sumFitness = ga.getFitnessSum();
 				float averageFitness = sumFitness / collectors.size();
@@ -108,7 +110,7 @@ public class Collectors extends JFrame implements Runnable {
 			lastTime = System.currentTimeMillis();
 			if(lastSecond - lastTime / 1000 < 0) {
 				lastSecond = lastTime / 1000;
-				this.setTitle("Collector Test :: " + framesThisSecond + " FPS");//, APEX: " + pop.getFittest());
+				this.setTitle("Collector Test :: Generation: " + generations + " :: " + framesThisSecond + " FPS");//, APEX: " + pop.getFittest());
 				framesThisSecond = 0;
 			}
 			if (time > 0) { 
@@ -197,11 +199,11 @@ public class Collectors extends JFrame implements Runnable {
 		
 		bbg.setColor(Color.YELLOW);
 		for(Coin coin : coins) {
-			bbg.fillOval(coin.getX(), coin.getY(), 10, 10);
+			bbg.fillOval(coin.getX() - 5, coin.getY() - 5, 10, 10);
 		}
 		
 		bbg.setColor(Color.GREEN);
-		bbg.drawOval(center.getX(), center.getY(), 20, 20);
+		bbg.drawOval(center.getX() - 10, center.getY() - 10, 20, 20);
 		
 		g.drawImage(backbuffer, 0, 0, this);
 	}
