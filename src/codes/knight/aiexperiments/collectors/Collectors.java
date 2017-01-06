@@ -3,10 +3,15 @@ package codes.knight.aiexperiments.collectors;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
+
+import codes.knight.aiexperiments.GeneticAlgorithm;
+import codes.knight.aiexperiments.Network;
 
 public class Collectors extends JFrame implements Runnable {
 
@@ -20,11 +25,32 @@ public class Collectors extends JFrame implements Runnable {
 	private ArrayList<Coin> coins;
 	private Center center;
 	private long tickCount = 0;
+	private int ticksPerGeneration = 100000;
+	
+	private int frameRateCap = 60;
+	private int framesThisSecond = 0;
+	private boolean speedmode = false;
 
 	public Collectors() {
 		this.setSize(800, 600);
 		this.setTitle("Collector Test");
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		this.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent arg0) {
+				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
+					speedmode = !speedmode;
+				}
+			}
+			@Override
+			public void keyReleased(KeyEvent arg0) {
+				
+			}
+			@Override
+			public void keyTyped(KeyEvent arg0) {
+				
+			}
+		});
 		this.setVisible(true);
 		thread = new Thread(this);
 		thread.start();
@@ -47,16 +73,59 @@ public class Collectors extends JFrame implements Runnable {
 			Coin coin = new Coin((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight()));
 			coins.add(coin);
 		}
+		
+		long lastTime = System.currentTimeMillis();
+//		long delta = System.currentTimeMillis() - lastTime;
+		long time = System.currentTimeMillis();
+		long lastSecond = time / 1000;
 
 		while(running) {
+//			delta = System.currentTimeMillis() - lastTime;
+			if(tickCount % ticksPerGeneration == 0) {
+				GeneticAlgorithm<Collector> ga = new GeneticAlgorithm<Collector>(collectors);
+				float sumFitness = ga.getFitnessSum();
+				float averageFitness = sumFitness / collectors.size();
+				System.out.println("Evolving! Average fitness: " + averageFitness);
+				ArrayList<Network> nextGenNetworks = ga.nextGeneration();
+				ArrayList<Collector> nextGen = new ArrayList<Collector>();
+				for(Network n : nextGenNetworks) {
+					Collector c = new Collector(n, (float) Math.random() * this.getWidth(), (float) Math.random() * this.getHeight());
+					nextGen.add(c);
+				}
+				collectors = nextGen;
+				
+				coins.clear();
+				for(int i = 0; i < 50; i++) {
+					Coin coin = new Coin((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight()));
+					coins.add(coin);
+				}
+			}
 			tick();
-			draw();
+			if(!speedmode) draw();
+			framesThisSecond++;
 			tickCount++;
+			time = (long) ((1000 / frameRateCap) - (System.currentTimeMillis() - lastTime));
+			lastTime = System.currentTimeMillis();
+			if(lastSecond - lastTime / 1000 < 0) {
+				lastSecond = lastTime / 1000;
+				this.setTitle("Collector Test :: " + framesThisSecond + " FPS");//, APEX: " + pop.getFittest());
+				framesThisSecond = 0;
+			}
+			if (time > 0) { 
+				try {
+					if(!speedmode) Thread.sleep(time); 
+				} 
+				catch(Exception e){} 
+			}
 		}
 	}
 
 	private void tick() {
 		for(Collector collector : collectors) {
+			
+			//Time fitness cost:
+			collector.adjustFitness(-1/ticksPerGeneration);
+			
 			Coin nearestCoin = null;
 			if(collector.hasCoin()) {
 				if(collector.distanceTo(center) < 10) {
@@ -82,6 +151,8 @@ public class Collectors extends JFrame implements Runnable {
 			float dX = (float) Math.cos(collector.getAngle());
 			float dY = (float) Math.sin(collector.getAngle());
 			collector.move(dX, dY);
+			
+			//Keep in boundaries
 			if(collector.getX() < 0) collector.setX(0);
 			if(collector.getY() < 0) collector.setY(0);
 			if(collector.getX() > this.getWidth()) collector.setX(this.getWidth());

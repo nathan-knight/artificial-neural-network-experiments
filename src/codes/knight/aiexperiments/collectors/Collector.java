@@ -1,5 +1,6 @@
 package codes.knight.aiexperiments.collectors;
 
+import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.gamecore.Agent;
 
 public class Collector extends Agent {
@@ -26,6 +27,12 @@ public class Collector extends Agent {
 		super(x, y);
 	}
 	
+	public Collector(Network n, float x, float y) {
+		super(n);
+		setX(x);
+		setY(y);
+	}
+
 	public boolean hasCoin() {
 		return hasCoin;
 	}
