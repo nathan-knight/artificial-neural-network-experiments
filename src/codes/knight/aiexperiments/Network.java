@@ -54,7 +54,7 @@ public class Network {
 			}
 			outputLayer[i] = calcSigmoid(outputLayer[i]);
 		}
-		return outputLayer;//new float[] { 0, 1};
+		return outputLayer;
 	}
 	
 	public void randomize(float min, float max) {
