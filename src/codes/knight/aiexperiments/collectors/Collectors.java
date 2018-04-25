@@ -7,11 +7,15 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import javax.swing.*;
 
+import codes.knight.aiexperiments.BinaryGeneticAlgorithm;
 import codes.knight.aiexperiments.GeneticAlgorithm;
 import codes.knight.aiexperiments.Network;
+import codes.knight.aiexperiments.Utils;
 
 public class Collectors extends JFrame implements Runnable {
 
@@ -90,12 +94,18 @@ public class Collectors extends JFrame implements Runnable {
 //			delta = System.currentTimeMillis() - lastTime;
 			if(tickCount % ticksPerGeneration == 0) {
 				generations++;
-				GeneticAlgorithm<Collector> ga = new GeneticAlgorithm<Collector>(collectors);
+				//GeneticAlgorithm<Collector> ga = new GeneticAlgorithm<Collector>(collectors);
+				BinaryGeneticAlgorithm.Breeder<Collector> ga = new BinaryGeneticAlgorithm.Breeder<>(collectors);
 				float sumFitness = ga.getFitnessSum();
 				float averageFitness = sumFitness / collectors.size();
-				System.out.println("Evolving! Average fitness: " + averageFitness);
-				ArrayList<Network> nextGenNetworks = ga.nextGeneration();
-				ArrayList<Collector> nextGen = new ArrayList<Collector>();
+				if (ga.getPeakFitness() >= 20) {
+					String filename = "saved_collector " + ga.getPeakFitness() + " " + System.currentTimeMillis() + ".txt";
+					System.out.println("Found network with fitness >= 10! Saving to " + filename);
+					Utils.saveNetworkToDisk(ga.getPeakAgent().getNetwork(), filename);
+				}
+				System.out.println("Evolving! Average fitness: " + averageFitness + ", peak fitness: " + ga.getPeakFitness());
+				List<Network> nextGenNetworks = ga.breed();
+				ArrayList<Collector> nextGen = new ArrayList<>();
 				for(Network n : nextGenNetworks) {
 					Collector c = new Collector(n, (float) Math.random() * this.getWidth(), (float) Math.random() * this.getHeight());
 					nextGen.add(c);
@@ -150,7 +160,7 @@ public class Collectors extends JFrame implements Runnable {
 			float[] networkInput = new float[] {
 					nearestCoin == null ? 0 : (float) Math.atan2(collector.getX() - nearestCoin.getX(), collector.getY() - nearestCoin.getY()),
 					(float) Math.atan2(collector.getX() - center.getX(), collector.getY() - center.getY()),
-					collector.hasCoin() ? 1 : 0
+					collector.hasCoin() ? 1 : -1
 			};
 			
 			float[] output = collector.feed(networkInput);

@@ -31,4 +31,12 @@ public class UtilTests {
 
 		assertTrue(network.equals(Network.fromString(network.toBinary(), 3, 3, 3, 3)));
 	}
+
+	@Test
+	public void testNetworkCopy() {
+		Network network = new Network(3, 3, 3, 3);
+		network.randomize(-1, 1);
+
+		assertTrue(network.equals(new Network(network)));
+	}
 }

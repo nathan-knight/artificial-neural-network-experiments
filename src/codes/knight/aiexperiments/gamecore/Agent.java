@@ -45,5 +45,4 @@ public class Agent extends GameObject {
 	public Agent getInstance(Network brain) {
 		return new Agent(brain);
 	}
-	
 }
