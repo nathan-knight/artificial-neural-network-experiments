@@ -20,7 +20,7 @@ public class Collector extends Agent {
 	private float angle;
 	
 	public Collector() {
-		super(3, 2, 2, 2);
+		super(3, 2, 4, 2);
 	}
 	
 	public Collector(int x, int y) {

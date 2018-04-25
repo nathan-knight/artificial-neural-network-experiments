@@ -1,22 +1,33 @@
 package codes.knight.aiexperiments;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Network {
 
 	private double curveMod = 1;
+
+	private int inputNeuronCount;
+	private int hiddenLayerCount;
+	private int m_neuronsPerLayer;
+	private int outputNeuronCount;
 	
-	public float hiddenLayers[][];
-	public float inputLayer[];
-	public float outputLayer[];
+	float hiddenLayers[][];
+	float inputLayer[];
+	float outputLayer[];
+
+	float firstWeights[][];
+	float weights[][][];
+	float outputWeights[][];
 	
-	public float firstWeights[][];
-	public float weights[][][];
-	public float outputWeights[][];
-	
-	Random random = new Random();
+	private Random random = new Random();
 	
 	public Network(int inputNeurons, int hiddenLayers, int neuronsPerLayer, int outputNeurons) {
+		inputNeuronCount = inputNeurons;
+		hiddenLayerCount = hiddenLayers;
+		m_neuronsPerLayer = neuronsPerLayer;
+		outputNeuronCount = outputNeurons;
+
 		inputLayer = new float[inputNeurons];
 		firstWeights = new float[neuronsPerLayer][inputNeurons];
 		outputLayer = new float[outputNeurons];
@@ -27,9 +38,7 @@ public class Network {
 	}
 	
 	public float[] run(float input[]) {
-		for(int i = 0; i < inputLayer.length; i++) {
-			inputLayer[i] = input[i];
-		}
+		System.arraycopy(input, 0, inputLayer, 0, inputLayer.length);
 		//Feed to first layer from input
 		for(int i = 0; i < hiddenLayers[0].length; i++) {
 			for(int o = 0; o < inputLayer.length; o++) {
@@ -77,8 +86,70 @@ public class Network {
 		}
 	}
 	
-	public float calcSigmoid(double activation) {
+	private float calcSigmoid(double activation) {
 		return (float) (1.0f / (1.0f + Math.pow(Math.E, (activation * -1) / curveMod)));
 	}
 
+	public String toBinary() {
+		StringBuilder stringBuilder = new StringBuilder();
+
+		for (float node[] : firstWeights) {
+			for(float weight : node) {
+				stringBuilder.append(Utils.floatToString(weight));
+			}
+		}
+
+		for (float layer[][] : weights) {
+			for (float node[] : layer) {
+				for(float weight : node) {
+					stringBuilder.append(Utils.floatToString(weight));
+				}
+			}
+		}
+
+		for (float node[] : outputWeights) {
+			for(float weight : node) {
+				stringBuilder.append(Utils.floatToString(weight));
+			}
+		}
+
+		return stringBuilder.toString();
+	}
+
+	public Network setWeightsFromString(String string) {
+		for(float ff[] : firstWeights) {
+			for(int i = 0; i < ff.length; i++) {
+				ff[i] = Utils.stringToFloat(string.substring(0, 32));
+				string = string.substring(32);
+			}
+		}
+
+		for(float f[][] : weights) {
+			for(float ff[] : f) {
+				for(int i = 0; i < ff.length; i++) {
+					ff[i] = Utils.stringToFloat(string.substring(0, 32));
+					string = string.substring(32);
+				}
+			}
+		}
+
+		for(float ff[] : outputWeights) {
+			for(int i = 0; i < ff.length; i++) {
+				ff[i] = Utils.stringToFloat(string.substring(0, 32));
+				string = string.substring(32);
+			}
+		}
+
+		return this;
+	}
+
+	public static Network fromString(String string, int inputNeurons, int hiddenLayers, int neuronsPerLayer, int outputNeurons) {
+		return new Network(inputNeurons, hiddenLayers, neuronsPerLayer, outputNeurons).setWeightsFromString(string);
+	}
+
+	public boolean equals(Network other) {
+		return Arrays.deepEquals(firstWeights, other.firstWeights) &&
+				Arrays.deepEquals(weights, other.weights) &&
+				Arrays.deepEquals(outputWeights, other.outputWeights);
+	}
 }

@@ -8,7 +8,7 @@ import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-import javax.swing.JFrame;
+import javax.swing.*;
 
 import codes.knight.aiexperiments.GeneticAlgorithm;
 import codes.knight.aiexperiments.Network;
@@ -19,15 +19,15 @@ public class Collectors extends JFrame implements Runnable {
 
 	private Thread thread;
 	private boolean running = true;
-	BufferedImage backbuffer;
+	private BufferedImage backbuffer;
 
 	private ArrayList<Collector> collectors;
 	private ArrayList<Coin> coins;
 	private Center center;
-	private long tickCount = 0;
+	private long tickCount = 1;
 	private int ticksPerGeneration = 20000;
 	private int generations = 0;
-	
+
 	private int frameRateCap = 60;
 	private int framesThisSecond = 0;
 	private boolean speedmode = false;
@@ -35,12 +35,18 @@ public class Collectors extends JFrame implements Runnable {
 	public Collectors() {
 		this.setSize(800, 600);
 		this.setTitle("Collector Test");
-		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		this.addKeyListener(new KeyListener() {
 			@Override
 			public void keyPressed(KeyEvent arg0) {
 				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
 					speedmode = !speedmode;
+				}
+				if(arg0.getKeyCode() == KeyEvent.VK_SHIFT) {
+					for(Collector c : collectors) {
+						c.setX((int) (Math.random() * getWidth()));
+						c.setY((int) (Math.random() * getHeight()));
+					}
 				}
 			}
 			@Override
@@ -123,13 +129,14 @@ public class Collectors extends JFrame implements Runnable {
 	}
 
 	private void tick() {
+		center.setX(this.getWidth() / 2);
+		center.setY(this.getHeight() / 2);
 		for(Collector collector : collectors) {
 			
 			//Time fitness cost:
 			collector.adjustFitness(-1/ticksPerGeneration);
 			
-			Coin nearestCoin = null;
-			nearestCoin = findNearestCoin(collector);
+			Coin nearestCoin = findNearestCoin(collector);
 			if(collector.hasCoin()) {
 				if(collector.distanceTo(center) < 10) {
 					collector.setHasCoin(false);
