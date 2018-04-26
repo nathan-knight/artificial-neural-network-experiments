@@ -25,11 +25,22 @@ public class Collector extends GameObject implements Agent {
 	private boolean m_hasCoin = false;
 	private Color m_color = Color.WHITE;
 	private float m_angle;
+
+	private static final int INPUT_NEURON_COUNT = 1;
+	private static final int HIDDEN_LAYER_COUNT = 1;
+	private static final int NEURONS_PER_LAYER = 3;
+	private static final int OUTPUT_NEURON_COUNT = 3;
 	
 	public Collector() {
 		super(0, 0);
-		setNetwork(new Network(1, 1, 3, 3));
+		setNetwork(new Network(INPUT_NEURON_COUNT, HIDDEN_LAYER_COUNT, NEURONS_PER_LAYER, OUTPUT_NEURON_COUNT));
 		randomizeNetwork();
+	}
+
+	public Collector(String n, float x, float y) {
+		super(x, y);
+		setNetwork(Network.fromString(n, INPUT_NEURON_COUNT, HIDDEN_LAYER_COUNT,
+				NEURONS_PER_LAYER, OUTPUT_NEURON_COUNT));
 	}
 	
 	public Collector(Network n, float x, float y) {

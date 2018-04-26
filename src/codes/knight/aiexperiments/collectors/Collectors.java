@@ -6,6 +6,7 @@ import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -21,6 +22,8 @@ public class Collectors extends JFrame implements Runnable {
 
 	private static final long serialVersionUID = 1L;
 
+	private static final String SAVED_AGENT_FILE = "Saves/agents_collectors_basic.txt";
+
 	private Thread thread;
 	private boolean running = true;
 	private BufferedImage backbuffer;
@@ -30,6 +33,7 @@ public class Collectors extends JFrame implements Runnable {
 	private Center center;
 	private long tickCount = 1;
 	private int ticksPerGeneration = 20000;
+	private int generationsPerAutosave = 10;
 	private int generations = 0;
 
 	private int frameRateCap = 60;
@@ -43,6 +47,11 @@ public class Collectors extends JFrame implements Runnable {
 		this.addKeyListener(new KeyListener() {
 			@Override
 			public void keyPressed(KeyEvent arg0) {
+				if (arg0.getKeyCode() == KeyEvent.VK_Q) {
+					System.out.println("Saving and quitting! Filename: " + SAVED_AGENT_FILE);
+					Utils.saveAgentsToDisk(generations, collectors, SAVED_AGENT_FILE);
+					System.exit(0);
+				}
 				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
 					speedmode = !speedmode;
 				}
@@ -69,15 +78,32 @@ public class Collectors extends JFrame implements Runnable {
 
 	@Override
 	public void run() {
-		collectors = new ArrayList<Collector>();
-		coins = new ArrayList<Coin>();
+		collectors = new ArrayList<>();
+		coins = new ArrayList<>();
 		center = new Center(this.getWidth() / 2, this.getHeight() / 2);
 
-		for(int i = 0; i < 20; i++) {
-			Collector collector = new Collector();
-			collector.setX((int) (Math.random() * this.getWidth()));
-			collector.setY((int) (Math.random() * this.getHeight()));
-			collectors.add(collector);
+		File savedAgents = new File(SAVED_AGENT_FILE);
+
+		if (savedAgents.exists()) {
+			try (BufferedReader br = new BufferedReader(new FileReader(SAVED_AGENT_FILE))) {
+				String line = br.readLine();
+				generations = Integer.valueOf(line);
+				while ((line = br.readLine()) != null) {
+					collectors.add(new Collector(line,
+							(float) Math.random() * this.getWidth(),
+							(float) Math.random() * this.getHeight()));
+				}
+				System.out.println("Loaded " + collectors.size() + " collectors from disk");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			for(int i = 0; i < 20; i++) {
+				Collector collector = new Collector();
+				collector.setX((int) (Math.random() * this.getWidth()));
+				collector.setY((int) (Math.random() * this.getHeight()));
+				collectors.add(collector);
+			}
 		}
 
 		for(int i = 0; i < 50; i++) {
@@ -92,6 +118,9 @@ public class Collectors extends JFrame implements Runnable {
 
 		while(running) {
 //			delta = System.currentTimeMillis() - lastTime;
+			if (tickCount % (generationsPerAutosave * ticksPerGeneration) == 0) {
+				saveAgentsToFile();
+			}
 			if(tickCount % ticksPerGeneration == 0) {
 				generations++;
 				//GeneticAlgorithm<Collector> ga = new GeneticAlgorithm<Collector>(collectors);
@@ -265,5 +294,10 @@ public class Collectors extends JFrame implements Runnable {
 
 	private float round(float f) {
 		return Math.round(f * 100f) / 100f;
+	}
+
+	private void saveAgentsToFile() {
+		System.out.println("Saving agents to disk!");
+		Utils.saveAgentsToDisk(generations, collectors, SAVED_AGENT_FILE);
 	}
 }
