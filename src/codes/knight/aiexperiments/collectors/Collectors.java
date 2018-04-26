@@ -1,10 +1,10 @@
 package codes.knight.aiexperiments.collectors;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Date;
@@ -98,12 +98,13 @@ public class Collectors extends JFrame implements Runnable {
 				BinaryGeneticAlgorithm.Breeder<Collector> ga = new BinaryGeneticAlgorithm.Breeder<>(collectors);
 				float sumFitness = ga.getFitnessSum();
 				float averageFitness = sumFitness / collectors.size();
-				if (ga.getPeakFitness() >= 20) {
-					String filename = "saved_collector " + ga.getPeakFitness() + " " + System.currentTimeMillis() + ".txt";
+				/*if (ga.getPeakFitness() >= 20) {
+					String filename = "saved_collector " + round(ga.getPeakFitness()) + " " + System.currentTimeMillis() + ".txt";
 					System.out.println("Found network with fitness >= 10! Saving to " + filename);
 					Utils.saveNetworkToDisk(ga.getPeakAgent().getNetwork(), filename);
-				}
-				System.out.println("Evolving! Average fitness: " + averageFitness + ", peak fitness: " + ga.getPeakFitness());
+				}*/
+				// System.out.println("Evolving! Average fitness: " + averageFitness + ", peak fitness: " + ga.getPeakFitness());
+				System.out.println(new Date() + "\t" + round(averageFitness) + "\t" + round(ga.getPeakFitness()));
 				List<Network> nextGenNetworks = ga.breed();
 				ArrayList<Collector> nextGen = new ArrayList<>();
 				for(Network n : nextGenNetworks) {
@@ -156,19 +157,20 @@ public class Collectors extends JFrame implements Runnable {
 					nearestCoin = findNearestCoin(collector);
 				}
 			}
-			
+			float angleToCoin = nearestCoin == null ? 0 : (float) ((Math.atan2(collector.getY() - nearestCoin.getY(), collector.getX() - nearestCoin.getX()) - collector.getAngle() - Math.PI));
+			if (angleToCoin < -Math.PI) angleToCoin += 2 * Math.PI;
 			float[] networkInput = new float[] {
-					nearestCoin == null ? 0 : (float) Math.atan2(collector.getX() - nearestCoin.getX(), collector.getY() - nearestCoin.getY()),
-					(float) Math.atan2(collector.getX() - center.getX(), collector.getY() - center.getY()),
-					collector.hasCoin() ? 1 : -1
+					angleToCoin
 			};
 			
 			float[] output = collector.feed(networkInput);
-			float angleAdjustment = (output[0] - .5f) * 0.1f;
+			float angleAdjustment = (output[0] - 0.5f) * 0.3f;
 			collector.adjustAngle(angleAdjustment);
 			float dX = (float) Math.cos(collector.getAngle()) * output[1];
 			float dY = (float) Math.sin(collector.getAngle()) * output[1];
 			collector.move(dX, dY);
+
+			collector.setColor(new Color((int)(output[2] * 16777216)));
 			
 			//Keep in boundaries
 			if(collector.getX() < 0) collector.setX(0);
@@ -182,36 +184,49 @@ public class Collectors extends JFrame implements Runnable {
 		if(backbuffer == null) backbuffer = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
 		if(backbuffer.getWidth() != getWidth() || backbuffer.getHeight() != getHeight()) backbuffer = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
 		Graphics g = getGraphics();
-		Graphics bbg = backbuffer.getGraphics();
+		Graphics2D bbg = (Graphics2D) backbuffer.getGraphics();
 		bbg.clearRect(0, 0, getWidth(), getHeight());
 
-		bbg.setColor(Color.WHITE);
 		for(Collector collector : collectors) {
 			float xShift = 5;
 			float yShift = 5;
+			int size = 10;
 			float cornerAngle = 90;
 			float angle = collector.getAngle();
 			float x = collector.getX();
 			float y = collector.getY();
-			Point a = new Point(), b = new Point(), c = new Point(), d = new Point();
-			
-			a.setLocation(x + xShift * Math.cos(cornerAngle + angle), y + yShift * Math.sin(cornerAngle + angle));
-			d.setLocation(x + xShift * Math.cos(cornerAngle + angle + Math.PI/2), y + yShift * Math.sin(cornerAngle + angle + Math.PI/2));
-			c.setLocation(x + xShift * Math.cos(cornerAngle + angle + Math.PI), y + yShift * Math.sin(cornerAngle + angle + Math.PI));
-			b.setLocation(x + xShift * Math.cos(cornerAngle + angle + 3*(Math.PI/2)), y + yShift * Math.sin(cornerAngle + angle + (Math.PI/2) * 3));
-			
-			bbg.drawLine(a.x, a.y, b.x, b.y);
-			bbg.drawLine(b.x, b.y, c.x, c.y);
-			bbg.drawLine(c.x, c.y, d.x, d.y);
-			bbg.drawLine(d.x, d.y, a.x, a.y);
-			
+
+			bbg.setColor(Color.WHITE);
+			bbg.drawLine(collector.getX(), collector.getY(),
+					(int)(x + 10 * Math.cos(angle)),
+					(int)(y + 10 * Math.sin(angle)));
+
 			if(collector.hasCoin()) {
 				bbg.fillOval((int) (x - xShift), (int) (y - yShift), 10, 10);
 			} else {
+				// Draw a line to the nearest coin
 				Coin coin = findNearestCoin(collector);
 				bbg.drawLine(coin.getX(), coin.getY(), collector.getX(), collector.getY());
+
+
+				// Draw the angle to the coin
+				/*float angleToCoin = (float) (Math.toDegrees(Math.atan2(collector.getY() - coin.getY(), collector.getX() - coin.getX()) - angle - Math.PI));
+				if (angleToCoin < -180) angleToCoin += 360f;
+				bbg.drawString(
+						String.valueOf(round(angleToCoin)),
+						x - 15, y - 15);*/
 			}
-			
+
+			bbg.setColor(collector.getColor());
+
+			Rectangle collectorRect = new Rectangle(-size / 2, -size / 2, size, size);
+			Path2D.Double rectPath = new Path2D.Double();
+			rectPath.append(collectorRect, false);
+			AffineTransform transform = new AffineTransform();
+			transform.translate(x, y);
+			transform.rotate(angle);
+			rectPath.transform(transform);
+			bbg.draw(rectPath);
 		}
 		
 		bbg.setColor(Color.YELLOW);
@@ -219,8 +234,8 @@ public class Collectors extends JFrame implements Runnable {
 			bbg.fillOval(coin.getX() - 5, coin.getY() - 5, 10, 10);
 		}
 		
-		bbg.setColor(Color.GREEN);
-		bbg.drawOval(center.getX() - 10, center.getY() - 10, 20, 20);
+		/*bbg.setColor(Color.GREEN);
+		bbg.drawOval(center.getX() - 10, center.getY() - 10, 20, 20);*/
 		
 		g.drawImage(backbuffer, 0, 0, this);
 	}
@@ -228,7 +243,7 @@ public class Collectors extends JFrame implements Runnable {
 	private Coin findNearestCoin(Collector collector) {
 		Coin nearestCoin = null;
 		float bestDistance = Float.MAX_VALUE;
-		Coin toRemove = null;
+		//Coin toRemove = null;
 		for(Coin coin : coins) {
 			float distance = coin.distanceTo(collector);
 			if(nearestCoin == null || distance < bestDistance) {
@@ -236,14 +251,19 @@ public class Collectors extends JFrame implements Runnable {
 				nearestCoin = coin;
 			}
 			if(!collector.hasCoin() && distance < 10) {
-				collector.setHasCoin(true);
-				collector.adjustFitness(0.1f);
-				toRemove = coin;
+				//collector.setHasCoin(true);
+				collector.adjustFitness(0.3f);
+				coin.setX((int) (Math.random() * this.getWidth()));
+				coin.setY((int) (Math.random() * this.getHeight()));
+				//toRemove = coin;
 				break;
 			}
 		}
-		if(toRemove != null) coins.remove(toRemove);
+		//if(toRemove != null) coins.remove(toRemove);
 		return nearestCoin;
 	}
 
+	private float round(float f) {
+		return Math.round(f * 100f) / 100f;
+	}
 }

@@ -3,6 +3,8 @@ package codes.knight.aiexperiments.collectors;
 import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.gamecore.Agent;
 
+import java.awt.*;
+
 public class Collector extends Agent {
 	
 	/*Structure:
@@ -12,15 +14,16 @@ public class Collector extends Agent {
 	 * Carrying coin?
 	 * 
 	 * Output Nodes:
-	 * Turn
-	 * Forward/Backward
+	 * Turn angle
+	 * Speed
 	 * */
 	
-	private boolean hasCoin = false;
-	private float angle;
+	private boolean m_hasCoin = false;
+	private Color m_color = Color.WHITE;
+	private float m_angle;
 	
 	public Collector() {
-		super(3, 3, 5, 2);
+		super(1, 1, 3, 3);
 	}
 	
 	public Collector(int x, int y) {
@@ -34,18 +37,27 @@ public class Collector extends Agent {
 	}
 
 	public boolean hasCoin() {
-		return hasCoin;
+		return m_hasCoin;
 	}
 	
 	public void setHasCoin(boolean value) {
-		this.hasCoin = value;
+		this.m_hasCoin = value;
 	}
 	
 	public float getAngle() {
-		return angle;
+		return m_angle;
 	}
 	
 	public void adjustAngle(float adjustment) {
-		angle += adjustment;
+		m_angle += adjustment;
+		m_angle %= Math.PI * 2;
+	}
+
+	public Color getColor() {
+		return m_color;
+	}
+
+	public void setColor(Color color) {
+		this.m_color = color;
 	}
 }
