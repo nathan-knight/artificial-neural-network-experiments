@@ -2,10 +2,11 @@ package codes.knight.aiexperiments.collectors;
 
 import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.gamecore.Agent;
+import codes.knight.aiexperiments.gamecore.GameObject;
 
 import java.awt.*;
 
-public class Collector extends Agent {
+public class Collector extends GameObject implements Agent {
 	
 	/*Structure:
 	 * Input Nodes:
@@ -17,23 +18,23 @@ public class Collector extends Agent {
 	 * Turn angle
 	 * Speed
 	 * */
-	
+
+	private Network m_network;
+	private float m_fitness;
+
 	private boolean m_hasCoin = false;
 	private Color m_color = Color.WHITE;
 	private float m_angle;
 	
 	public Collector() {
-		super(1, 1, 3, 3);
-	}
-	
-	public Collector(int x, int y) {
-		super(x, y);
+		super(0, 0);
+		setNetwork(new Network(1, 1, 3, 3));
+		randomizeNetwork();
 	}
 	
 	public Collector(Network n, float x, float y) {
-		super(n);
-		setX(x);
-		setY(y);
+		super(x, y);
+		setNetwork(n);
 	}
 
 	public boolean hasCoin() {
@@ -59,5 +60,35 @@ public class Collector extends Agent {
 
 	public void setColor(Color color) {
 		this.m_color = color;
+	}
+
+	@Override
+	public Network getNetwork() {
+		return m_network;
+	}
+
+	@Override
+	public void setNetwork(Network network) {
+		m_network = network;
+	}
+
+	@Override
+	public void randomizeNetwork() {
+		getNetwork().randomize();
+	}
+
+	@Override
+	public float[] feed(float[] input) {
+		return m_network.run(input);
+	}
+
+	@Override
+	public float getFitness() {
+		return m_fitness;
+	}
+
+	@Override
+	public void adjustFitness(float adjustment) {
+		m_fitness += adjustment;
 	}
 }

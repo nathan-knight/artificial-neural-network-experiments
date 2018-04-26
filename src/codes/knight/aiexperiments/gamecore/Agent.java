@@ -2,12 +2,18 @@ package codes.knight.aiexperiments.gamecore;
 
 import codes.knight.aiexperiments.Network;
 
-public class Agent extends GameObject {
-	
-	protected Network network;
-	protected float fitness;
+public interface Agent {
 
-	public Agent(int inputNodeCount, int hiddenLayerCount, int hiddenLayerNodeCount, int outputNodeCount) {
+	Network getNetwork();
+	void setNetwork(Network network);
+	void randomizeNetwork();
+
+	float[] feed(float[] input);
+
+	float getFitness();
+	void adjustFitness(float adjustment);
+
+	/*public Agent(int inputNodeCount, int hiddenLayerCount, int hiddenLayerNodeCount, int outputNodeCount) {
 		super(0, 0);
 		network = new Network(inputNodeCount, hiddenLayerCount, hiddenLayerNodeCount, outputNodeCount);
 		network.randomize(-1, 1);
@@ -20,29 +26,9 @@ public class Agent extends GameObject {
 	
 	public Agent(int x, int y) {
 		super(x, y);
-	}
+	}*/
 	
-	public float[] feed(float[] values) {
-		return network.run(values);
-	}
-	
-	public void adjustFitness(float adjustment) {
-		fitness += adjustment;
-	}
-	
-	public float getFitness() {
-		return fitness;
-	}
-	
-	public void randomizeNetwork() {
+	/*public void randomizeNetwork() {
 		network.randomize(-1, 1);
-	}
-	
-	public Network getNetwork() {
-		return network;
-	}
-	
-	public Agent getInstance(Network brain) {
-		return new Agent(brain);
-	}
+	}*/
 }
