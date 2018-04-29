@@ -3,8 +3,6 @@ package codes.knight.aiexperiments.collectors;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
@@ -14,7 +12,6 @@ import java.util.List;
 import javax.swing.*;
 
 import codes.knight.aiexperiments.BinaryGeneticAlgorithm;
-import codes.knight.aiexperiments.GeneticAlgorithm;
 import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.Utils;
 
@@ -22,23 +19,33 @@ public class Collectors extends JFrame implements Runnable {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final String SAVED_AGENT_FILE = "Saves/agents_collectors_basic.txt";
+	private static final String SAVED_AGENT_FILE_PREFIX = "Saves/agents_collectors_";
+	private static final int TICKS_PER_GENERATION = 20000;
+	private static final int GENERATIONS_PER_AUTOSAVE = 10;
+	private static final int FRAME_RATE_CAP = 60;
 
 	private Thread thread;
 	private boolean running = true;
-	private BufferedImage backbuffer;
+	private BufferedImage m_backbuffer;
 
-	private ArrayList<Collector> collectors;
-	private ArrayList<Coin> coins;
-	private Center center;
-	private long tickCount = 1;
-	private int ticksPerGeneration = 20000;
-	private int generationsPerAutosave = 10;
-	private int generations = 0;
+	private ArrayList<Collector> m_collectors;
+	private ArrayList<Coin> m_coins;
+	private Center m_center;
+	private long m_tickCount = 1;
+	private int m_generations = 0;
 
-	private int frameRateCap = 60;
-	private int framesThisSecond = 0;
-	private boolean speedmode = false;
+	private int m_framesThisSecond = 0;
+	private int m_lastFPS = 0;
+	private boolean m_speedmode = false;
+
+	private boolean m_saveHighFitnessAgents = false;
+	private float 	m_highFitnessThreshold = 90;
+
+	private boolean m_showNearestLine = false;
+	private boolean m_showAngleToCoin = false;
+
+	private boolean m_useCenterDropOff = false;
+	private boolean m_neighborAware = false;
 
 	public Collectors() {
 		this.setSize(800, 600);
@@ -46,17 +53,17 @@ public class Collectors extends JFrame implements Runnable {
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		this.addKeyListener(new KeyListener() {
 			@Override
-			public void keyPressed(KeyEvent arg0) {
-				if (arg0.getKeyCode() == KeyEvent.VK_Q) {
-					System.out.println("Saving and quitting! Filename: " + SAVED_AGENT_FILE);
-					Utils.saveAgentsToDisk(generations, collectors, SAVED_AGENT_FILE);
+			public void keyPressed(KeyEvent event) {
+				if (event.getKeyCode() == KeyEvent.VK_Q) {
+					System.out.println("Saving and quitting! Filename: " + getSaveFileName());
+					Utils.saveAgentsToDisk(m_generations, m_collectors, getSaveFileName());
 					System.exit(0);
 				}
-				if(arg0.getKeyCode() == KeyEvent.VK_ENTER) {
-					speedmode = !speedmode;
+				if(event.getKeyCode() == KeyEvent.VK_ENTER) {
+					m_speedmode = !m_speedmode;
 				}
-				if(arg0.getKeyCode() == KeyEvent.VK_SHIFT) {
-					for(Collector c : collectors) {
+				if(event.getKeyCode() == KeyEvent.VK_SHIFT) {
+					for(Collector c : m_collectors) {
 						c.setX((int) (Math.random() * getWidth()));
 						c.setY((int) (Math.random() * getHeight()));
 					}
@@ -71,97 +78,121 @@ public class Collectors extends JFrame implements Runnable {
 				
 			}
 		});
+	}
+
+	public Collectors start() {
 		this.setVisible(true);
 		thread = new Thread(this);
 		thread.start();
+
+		return this;
+	}
+
+	public Collectors saveHighFitnessAgents() {
+		m_saveHighFitnessAgents = true;
+		return this;
+	}
+
+	public Collectors setHighFitnessThreshold(float threshold) {
+		m_highFitnessThreshold = threshold;
+		return this;
+	}
+
+	public Collectors setShowNearestLine(boolean show) {
+		m_showNearestLine = show;
+		return this;
+	}
+
+	public Collectors setShowAngleToCoin(boolean show) {
+		m_showAngleToCoin = show;
+		return this;
+	}
+
+	public Collectors enableCenterDropOff() {
+		m_useCenterDropOff = true;
+		return this;
+	}
+
+	public Collectors enableNeighbourAwareness() {
+		m_neighborAware = true;
+		return this;
+	}
+
+	public boolean usesCenterDropOff() {
+		return m_useCenterDropOff;
+	}
+
+	public boolean usesNeighbourAwareness() {
+		return m_neighborAware;
+	}
+
+	private String getSaveFileName() {
+		StringBuilder sb = new StringBuilder(SAVED_AGENT_FILE_PREFIX);
+		boolean usesSpecial = false;
+
+		if (m_useCenterDropOff) {
+			sb.append("center");
+			usesSpecial = true;
+		}
+
+		if (m_neighborAware) {
+			if (usesSpecial) sb.append("_");
+			sb.append("neighbour");
+		}
+
+		if (!usesSpecial) {
+			sb.append("basic");
+		}
+		sb.append(".txt");
+		return sb.toString();
+	}
+
+	public int getInputNeuronCount() {
+		int count = 1;
+
+		return count;
 	}
 
 	@Override
 	public void run() {
-		collectors = new ArrayList<>();
-		coins = new ArrayList<>();
-		center = new Center(this.getWidth() / 2, this.getHeight() / 2);
+		m_collectors = new ArrayList<>();
+		m_coins = new ArrayList<>();
+		m_center = new Center(this.getWidth() / 2, this.getHeight() / 2);
 
-		File savedAgents = new File(SAVED_AGENT_FILE);
-
-		if (savedAgents.exists()) {
-			try (BufferedReader br = new BufferedReader(new FileReader(SAVED_AGENT_FILE))) {
-				String line = br.readLine();
-				generations = Integer.valueOf(line);
-				while ((line = br.readLine()) != null) {
-					collectors.add(new Collector(line,
-							(float) Math.random() * this.getWidth(),
-							(float) Math.random() * this.getHeight()));
-				}
-				System.out.println("Loaded " + collectors.size() + " collectors from disk");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} else {
-			for(int i = 0; i < 20; i++) {
-				Collector collector = new Collector();
-				collector.setX((int) (Math.random() * this.getWidth()));
-				collector.setY((int) (Math.random() * this.getHeight()));
-				collectors.add(collector);
-			}
-		}
+		m_generations = initializeCollectors(m_collectors);
 
 		for(int i = 0; i < 50; i++) {
 			Coin coin = new Coin((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight()));
-			coins.add(coin);
+			m_coins.add(coin);
 		}
 		
 		long lastTime = System.currentTimeMillis();
-//		long delta = System.currentTimeMillis() - lastTime;
 		long time = System.currentTimeMillis();
 		long lastSecond = time / 1000;
 
 		while(running) {
-//			delta = System.currentTimeMillis() - lastTime;
-			if (tickCount % (generationsPerAutosave * ticksPerGeneration) == 0) {
+			if (m_tickCount % (GENERATIONS_PER_AUTOSAVE * TICKS_PER_GENERATION) == 0) {
 				saveAgentsToFile();
 			}
-			if(tickCount % ticksPerGeneration == 0) {
-				generations++;
-				//GeneticAlgorithm<Collector> ga = new GeneticAlgorithm<Collector>(collectors);
-				BinaryGeneticAlgorithm.Breeder<Collector> ga = new BinaryGeneticAlgorithm.Breeder<>(collectors);
-				float sumFitness = ga.getFitnessSum();
-				float averageFitness = sumFitness / collectors.size();
-				/*if (ga.getPeakFitness() >= 20) {
-					String filename = "saved_collector " + round(ga.getPeakFitness()) + " " + System.currentTimeMillis() + ".txt";
-					System.out.println("Found network with fitness >= 10! Saving to " + filename);
-					Utils.saveNetworkToDisk(ga.getPeakAgent().getNetwork(), filename);
-				}*/
-				// System.out.println("Evolving! Average fitness: " + averageFitness + ", peak fitness: " + ga.getPeakFitness());
-				System.out.println(new Date() + "\t" + round(averageFitness) + "\t" + round(ga.getPeakFitness()));
-				List<Network> nextGenNetworks = ga.breed();
-				ArrayList<Collector> nextGen = new ArrayList<>();
-				for(Network n : nextGenNetworks) {
-					Collector c = new Collector(n, (float) Math.random() * this.getWidth(), (float) Math.random() * this.getHeight());
-					nextGen.add(c);
-				}
-				collectors = nextGen;
-				
-				coins.clear();
-				for(int i = 0; i < 50; i++) {
-					Coin coin = new Coin((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight()));
-					coins.add(coin);
-				}
+			if(m_tickCount % TICKS_PER_GENERATION == 0) {
+				m_generations++;
+				breedNextGeneration();
 			}
 			tick();
-			if(!speedmode) draw();
-			framesThisSecond++;
-			tickCount++;
-			time = (long) ((1000 / frameRateCap) - (System.currentTimeMillis() - lastTime));
+			if(!m_speedmode) draw();
+			m_framesThisSecond++;
+			m_tickCount++;
+			time = (long) ((1000 / FRAME_RATE_CAP) - (System.currentTimeMillis() - lastTime));
 			lastTime = System.currentTimeMillis();
 			if(lastSecond - lastTime / 1000 < 0) {
 				lastSecond = lastTime / 1000;
-				this.setTitle("Collector Test :: Generation: " + generations + " :: " + framesThisSecond + " FPS");//, APEX: " + pop.getFittest());
-				framesThisSecond = 0;
+				this.setTitle("Collector Test :: Generation: " + m_generations + " :: " + m_framesThisSecond + " FPS");
+				m_lastFPS = m_framesThisSecond;
+				m_framesThisSecond = 0;
 			}
 			if (time > 0) { 
 				try {
-					if(!speedmode) Thread.sleep(time); 
+					if(!m_speedmode) Thread.sleep(time);
 				} 
 				catch(Exception e){} 
 			}
@@ -169,126 +200,78 @@ public class Collectors extends JFrame implements Runnable {
 	}
 
 	private void tick() {
-		center.setX(this.getWidth() / 2);
-		center.setY(this.getHeight() / 2);
-		for(Collector collector : collectors) {
-			
-			//Time fitness cost:
-			collector.adjustFitness(-1/ticksPerGeneration);
-			
-			Coin nearestCoin = findNearestCoin(collector);
-			if(collector.hasCoin()) {
-				if(collector.distanceTo(center) < 10) {
-					collector.setHasCoin(false);
-					collector.adjustFitness(1f);
-					Coin coin = new Coin((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight()));
-					coins.add(coin);
-					nearestCoin = findNearestCoin(collector);
-				}
-			}
-			float angleToCoin = nearestCoin == null ? 0 : (float) ((Math.atan2(collector.getY() - nearestCoin.getY(), collector.getX() - nearestCoin.getX()) - collector.getAngle() - Math.PI));
-			if (angleToCoin < -Math.PI) angleToCoin += 2 * Math.PI;
-			float[] networkInput = new float[] {
-					angleToCoin
-			};
-			
-			float[] output = collector.feed(networkInput);
-			float angleAdjustment = (output[0] - 0.5f) * 0.3f;
-			collector.adjustAngle(angleAdjustment);
-			float dX = (float) Math.cos(collector.getAngle()) * output[1];
-			float dY = (float) Math.sin(collector.getAngle()) * output[1];
-			collector.move(dX, dY);
-
-			collector.setColor(new Color((int)(output[2] * 16777216)));
-			
-			//Keep in boundaries
-			if(collector.getX() < 0) collector.setX(0);
-			if(collector.getY() < 0) collector.setY(0);
-			if(collector.getX() > this.getWidth()) collector.setX(this.getWidth());
-			if(collector.getY() > this.getHeight()) collector.setY(this.getHeight());
+		m_center.setX(this.getWidth() / 2);
+		m_center.setY(this.getHeight() / 2);
+		for(Collector collector : m_collectors) {
+			collector.tick(this, getWidth(), getHeight(), m_coins, m_collectors, m_center);
 		}
 	}
 
 	private void draw() {
-		if(backbuffer == null) backbuffer = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
-		if(backbuffer.getWidth() != getWidth() || backbuffer.getHeight() != getHeight()) backbuffer = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
+		if(m_backbuffer == null) m_backbuffer = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
+		if(m_backbuffer.getWidth() != getWidth() || m_backbuffer.getHeight() != getHeight()) m_backbuffer = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
 		Graphics g = getGraphics();
-		Graphics2D bbg = (Graphics2D) backbuffer.getGraphics();
+		Graphics2D bbg = (Graphics2D) m_backbuffer.getGraphics();
 		bbg.clearRect(0, 0, getWidth(), getHeight());
 
-		for(Collector collector : collectors) {
-			float xShift = 5;
-			float yShift = 5;
-			int size = 10;
-			float cornerAngle = 90;
+		for(Collector collector : m_collectors) {
 			float angle = collector.getAngle();
 			float x = collector.getX();
 			float y = collector.getY();
 
-			bbg.setColor(Color.WHITE);
-			bbg.drawLine(collector.getX(), collector.getY(),
-					(int)(x + 10 * Math.cos(angle)),
-					(int)(y + 10 * Math.sin(angle)));
-
-			if(collector.hasCoin()) {
-				bbg.fillOval((int) (x - xShift), (int) (y - yShift), 10, 10);
-			} else {
+			if (m_showNearestLine && !collector.hasCoin()) {
 				// Draw a line to the nearest coin
 				Coin coin = findNearestCoin(collector);
 				bbg.drawLine(coin.getX(), coin.getY(), collector.getX(), collector.getY());
 
-
-				// Draw the angle to the coin
-				/*float angleToCoin = (float) (Math.toDegrees(Math.atan2(collector.getY() - coin.getY(), collector.getX() - coin.getX()) - angle - Math.PI));
-				if (angleToCoin < -180) angleToCoin += 360f;
-				bbg.drawString(
-						String.valueOf(round(angleToCoin)),
-						x - 15, y - 15);*/
+				if (m_showAngleToCoin) {
+					// Draw the angle to the coin
+					bbg.drawString(
+							String.valueOf(round(collector.angleTo(coin))),
+							x - 15, y - 15);
+				}
 			}
-
-			bbg.setColor(collector.getColor());
-
-			Rectangle collectorRect = new Rectangle(-size / 2, -size / 2, size, size);
-			Path2D.Double rectPath = new Path2D.Double();
-			rectPath.append(collectorRect, false);
-			AffineTransform transform = new AffineTransform();
-			transform.translate(x, y);
-			transform.rotate(angle);
-			rectPath.transform(transform);
-			bbg.draw(rectPath);
+			collector.draw(bbg);
 		}
-		
-		bbg.setColor(Color.YELLOW);
-		for(Coin coin : coins) {
-			bbg.fillOval(coin.getX() - 5, coin.getY() - 5, 10, 10);
+
+		for(Coin coin : m_coins) {
+			coin.draw(bbg);
 		}
-		
-		/*bbg.setColor(Color.GREEN);
-		bbg.drawOval(center.getX() - 10, center.getY() - 10, 20, 20);*/
-		
-		g.drawImage(backbuffer, 0, 0, this);
+
+		if (m_useCenterDropOff) {
+			m_center.draw(bbg);
+		}
+
+		bbg.setColor(Color.WHITE);
+		bbg.drawString("Generation: " + m_generations, 30, this.getHeight() - 50);
+		bbg.drawString("FPS: " + m_lastFPS, 30, this.getHeight() - 30);
+
+		g.drawImage(m_backbuffer, 0, 0, this);
 	}
 	
 	private Coin findNearestCoin(Collector collector) {
 		Coin nearestCoin = null;
 		float bestDistance = Float.MAX_VALUE;
-		//Coin toRemove = null;
-		for(Coin coin : coins) {
+		Coin toRemove = null;
+		for(Coin coin : m_coins) {
 			float distance = coin.distanceTo(collector);
 			if(nearestCoin == null || distance < bestDistance) {
 				bestDistance = distance;
 				nearestCoin = coin;
 			}
 			if(!collector.hasCoin() && distance < 10) {
-				//collector.setHasCoin(true);
+				if (m_useCenterDropOff) {
+					collector.setHasCoin(true);
+					toRemove = coin;
+				} else {
+					coin.setX((int) (Math.random() * this.getWidth()));
+					coin.setY((int) (Math.random() * this.getHeight()));
+				}
 				collector.adjustFitness(0.3f);
-				coin.setX((int) (Math.random() * this.getWidth()));
-				coin.setY((int) (Math.random() * this.getHeight()));
-				//toRemove = coin;
 				break;
 			}
 		}
-		//if(toRemove != null) coins.remove(toRemove);
+		if(toRemove != null) m_coins.remove(toRemove);
 		return nearestCoin;
 	}
 
@@ -298,6 +281,65 @@ public class Collectors extends JFrame implements Runnable {
 
 	private void saveAgentsToFile() {
 		System.out.println("Saving agents to disk!");
-		Utils.saveAgentsToDisk(generations, collectors, SAVED_AGENT_FILE);
+		Utils.saveAgentsToDisk(m_generations, m_collectors, getSaveFileName());
+	}
+
+	private void initializeNewCollectors(List<Collector> collectors) {
+		for(int i = 0; i < 20; i++) {
+			Collector collector = new Collector(getInputNeuronCount());
+			collector.setX((int) (Math.random() * this.getWidth()));
+			collector.setY((int) (Math.random() * this.getHeight()));
+			collectors.add(collector);
+		}
+	}
+
+	private int initializeCollectors(List<Collector> collectors) {
+		int generations;
+		File savedAgents = new File(getSaveFileName());
+		if (savedAgents.exists()) {
+			try (BufferedReader br = new BufferedReader(new FileReader(getSaveFileName()))) {
+				String line = br.readLine();
+				generations = Integer.valueOf(line);
+				while ((line = br.readLine()) != null) {
+					collectors.add(new Collector(line, getInputNeuronCount(),
+							(float) Math.random() * this.getWidth(),
+							(float) Math.random() * this.getHeight()));
+				}
+				System.out.println("Loaded " + collectors.size() + " collectors from disk");
+			} catch (IOException e) {
+				generations = 0;
+				initializeNewCollectors(collectors);
+				e.printStackTrace();
+			}
+		} else {
+			generations = 0;
+			initializeNewCollectors(collectors);
+		}
+		return generations;
+	}
+
+	private void breedNextGeneration() {
+		BinaryGeneticAlgorithm.Breeder<Collector> ga = new BinaryGeneticAlgorithm.Breeder<>(m_collectors);
+		float sumFitness = ga.getFitnessSum();
+		float averageFitness = sumFitness / m_collectors.size();
+		if (m_saveHighFitnessAgents && ga.getPeakFitness() >= m_highFitnessThreshold) {
+			String filename = "saved_collector " + round(ga.getPeakFitness()) + " " + System.currentTimeMillis() + ".txt";
+			System.out.println("Found network with fitness >= 10! Saving to " + filename);
+			Utils.saveNetworkToDisk(ga.getPeakAgent().getNetwork(), filename);
+		}
+		System.out.println(new Date() + "\t" + round(averageFitness) + "\t" + round(ga.getPeakFitness()));
+		List<Network> nextGenNetworks = ga.breed();
+		ArrayList<Collector> nextGen = new ArrayList<>();
+		for(Network n : nextGenNetworks) {
+			Collector c = new Collector(n, (float) Math.random() * this.getWidth(), (float) Math.random() * this.getHeight());
+			nextGen.add(c);
+		}
+		m_collectors = nextGen;
+
+		m_coins.clear();
+		for(int i = 0; i < 50; i++) {
+			Coin coin = new Coin((int) (Math.random() * this.getWidth()), (int) (Math.random() * this.getHeight()));
+			m_coins.add(coin);
+		}
 	}
 }
