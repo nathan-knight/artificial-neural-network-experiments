@@ -71,6 +71,8 @@ public class Collector extends GameObject implements Agent {
 	}
 
 	public void tick(Collectors gameObj, int width, int height, List<Coin> coins, List<Collector> collectors, GameObject center) {
+		adjustFitness(-1 / Collectors.TICKS_PER_GENERATION);
+
 		Coin nearestCoin = GameObject.findNearest(this, coins);
 
 		if (this.distanceTo(nearestCoin) < 10f) {

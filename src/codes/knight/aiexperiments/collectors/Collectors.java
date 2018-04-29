@@ -20,7 +20,7 @@ public class Collectors extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 
 	private static final String SAVED_AGENT_FILE_PREFIX = "Saves/agents_collectors_";
-	private static final int TICKS_PER_GENERATION = 20000;
+	public static final int TICKS_PER_GENERATION = 20000;
 	private static final int GENERATIONS_PER_AUTOSAVE = 10;
 	private static final int FRAME_RATE_CAP = 60;
 
@@ -149,6 +149,9 @@ public class Collectors extends JFrame implements Runnable {
 
 	public int getInputNeuronCount() {
 		int count = 1;
+
+		if (usesCenterDropOff()) count++;
+		if (usesNeighbourAwareness()) count++;
 
 		return count;
 	}
