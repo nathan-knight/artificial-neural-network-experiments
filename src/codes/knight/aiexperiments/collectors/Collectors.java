@@ -46,6 +46,8 @@ public class Collectors extends JFrame implements Runnable {
 
 	private boolean m_useCenterDropOff = false;
 	private boolean m_neighborAware = false;
+	private int m_hiddenLayers = 1;
+	private int m_neuronsPerHiddenLayer = 3;
 
 	public Collectors() {
 		this.setSize(800, 600);
@@ -108,6 +110,16 @@ public class Collectors extends JFrame implements Runnable {
 		return this;
 	}
 
+	public Collectors setNumberOfHiddenLayers(int num) {
+		m_hiddenLayers = num;
+		return this;
+	}
+
+	public Collectors setNeuronsPerHiddenLayer(int num) {
+		m_neuronsPerHiddenLayer = num;
+		return this;
+	}
+
 	public Collectors enableCenterDropOff() {
 		m_useCenterDropOff = true;
 		return this;
@@ -143,6 +155,11 @@ public class Collectors extends JFrame implements Runnable {
 		if (!usesSpecial) {
 			sb.append("basic");
 		}
+
+		sb.append("_");
+		sb.append(m_hiddenLayers);
+		sb.append("_");
+		sb.append(m_neuronsPerHiddenLayer);
 		sb.append(".txt");
 		return sb.toString();
 	}
@@ -150,7 +167,7 @@ public class Collectors extends JFrame implements Runnable {
 	public int getInputNeuronCount() {
 		int count = 1;
 
-		if (usesCenterDropOff()) count++;
+		if (usesCenterDropOff()) count += 2;
 		if (usesNeighbourAwareness()) count++;
 
 		return count;
@@ -289,7 +306,7 @@ public class Collectors extends JFrame implements Runnable {
 
 	private void initializeNewCollectors(List<Collector> collectors) {
 		for(int i = 0; i < 20; i++) {
-			Collector collector = new Collector(getInputNeuronCount());
+			Collector collector = new Collector(getInputNeuronCount(), m_hiddenLayers, m_neuronsPerHiddenLayer);
 			collector.setX((int) (Math.random() * this.getWidth()));
 			collector.setY((int) (Math.random() * this.getHeight()));
 			collectors.add(collector);
@@ -305,6 +322,7 @@ public class Collectors extends JFrame implements Runnable {
 				generations = Integer.valueOf(line);
 				while ((line = br.readLine()) != null) {
 					collectors.add(new Collector(line, getInputNeuronCount(),
+							m_hiddenLayers, m_neuronsPerHiddenLayer,
 							(float) Math.random() * this.getWidth(),
 							(float) Math.random() * this.getHeight()));
 				}

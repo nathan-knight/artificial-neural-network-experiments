@@ -35,17 +35,18 @@ public class Collector extends GameObject implements Agent {
 	private static final int OUTPUT_NEURON_COUNT = 3;
 
 	private static final int DRAW_SIZE = 10;
-	
-	public Collector(int inputs) {
+	private static final int DRAW_COIN_SIZE = 8;
+
+	public Collector(int inputs, int hiddenLayers, int neuronsPerLayer) {
 		super(0, 0);
-		setNetwork(new Network(inputs, HIDDEN_LAYER_COUNT, NEURONS_PER_LAYER, OUTPUT_NEURON_COUNT));
+		setNetwork(new Network(inputs, hiddenLayers, neuronsPerLayer, OUTPUT_NEURON_COUNT));
 		randomizeNetwork();
 	}
 
-	public Collector(String n, int inputs, float x, float y) {
+	public Collector(String n, int inputs, int hiddenLayers, int neuronsPerLayer, float x, float y) {
 		super(x, y);
-		setNetwork(Network.fromString(n, inputs, HIDDEN_LAYER_COUNT,
-				NEURONS_PER_LAYER, OUTPUT_NEURON_COUNT));
+		setNetwork(Network.fromString(n, inputs, hiddenLayers,
+				neuronsPerLayer, OUTPUT_NEURON_COUNT));
 	}
 	
 	public Collector(Network n, float x, float y) {
@@ -54,6 +55,11 @@ public class Collector extends GameObject implements Agent {
 	}
 
 	public void draw(Graphics2D bbg) {
+		if (hasCoin()) {
+			bbg.setColor(Color.YELLOW);
+			bbg.fillOval(getX() - DRAW_COIN_SIZE / 2, getY() - DRAW_COIN_SIZE / 2, DRAW_COIN_SIZE, DRAW_COIN_SIZE);
+		}
+
 		bbg.setColor(Color.WHITE);
 		bbg.drawLine(getX(), getY(),
 				(int)(x + 10 * Math.cos(getAngle())),
@@ -75,11 +81,15 @@ public class Collector extends GameObject implements Agent {
 
 		Coin nearestCoin = GameObject.findNearest(this, coins);
 
-		if (this.distanceTo(nearestCoin) < 10f) {
+		if (!hasCoin() && this.distanceTo(nearestCoin) < 10f) {
 			this.adjustFitness(1);
 			coins.remove(nearestCoin);
-			coins.add(new Coin((int) (Math.random() * width), (int) (Math.random() * height)));
-			nearestCoin = findNearest(coins);
+			if (gameObj.usesCenterDropOff()) {
+				setHasCoin(true);
+			} else {
+				coins.add(new Coin((int) (Math.random() * width), (int) (Math.random() * height)));
+				nearestCoin = findNearest(coins);
+			}
 		}
 
 		if(hasCoin()) {
@@ -96,6 +106,7 @@ public class Collector extends GameObject implements Agent {
 
 		if (gameObj.usesCenterDropOff()) {
 			networkInput[neuron++] = angleTo(center);
+			networkInput[neuron++] = hasCoin() ? 1 : -1;
 		}
 
 		if (gameObj.usesNeighbourAwareness()) {

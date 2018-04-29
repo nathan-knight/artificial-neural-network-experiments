@@ -77,28 +77,28 @@ public class Network {
 	public float[] run(float input[]) {
 		System.arraycopy(input, 0, inputLayer, 0, inputLayer.length);
 		//Feed to first layer from input
-		for(int i = 0; i < hiddenLayers[0].length; i++) {
-			for(int o = 0; o < inputLayer.length; o++) {
-				hiddenLayers[0][i] += firstWeights[i][o] * inputLayer[o];
+		for(int neuron = 0; neuron < hiddenLayers[0].length; neuron++) {
+			for(int inputNeuron = 0; inputNeuron < inputLayer.length; inputNeuron++) {
+				hiddenLayers[0][neuron] += firstWeights[neuron][inputNeuron] * inputLayer[inputNeuron];
 			}
-			hiddenLayers[0][i] = calcSigmoid(hiddenLayers[0][i]);
+			hiddenLayers[0][neuron] = calcSigmoid(hiddenLayers[0][neuron]);
 		}
 		//Feed to hidden layers
-		for(int i = 1; i < hiddenLayers.length; i++) {
-			for(int o = 0; o < hiddenLayers[i].length; o++) {//o was i
-				for(int j = 0; j < weights[i][o].length; j++) {
-					hiddenLayers[i][o] += weights[i][o][j] * hiddenLayers[i-1][j];
+		for(int layer = 1; layer < hiddenLayers.length; layer++) {
+			for(int neuron = 0; neuron < hiddenLayers[layer].length; neuron++) {
+				for(int lastNeuron = 0; lastNeuron < weights[layer][neuron].length; lastNeuron++) {
+					hiddenLayers[layer][neuron] += weights[layer][neuron][lastNeuron] * hiddenLayers[layer-1][lastNeuron];
 				}
-				hiddenLayers[i][o] = calcSigmoid(hiddenLayers[i][o]);
+				hiddenLayers[layer][neuron] = calcSigmoid(hiddenLayers[layer][neuron]);
 			}
 		}
 		//Feed to output
-		for(int i = 0; i < outputLayer.length; i++) {
+		for(int neuron = 0; neuron < outputLayer.length; neuron++) {
 			int lastLayer = hiddenLayers.length-1;
-			for(int j = 0; j < hiddenLayers[hiddenLayers.length-1].length; j++) {
-				outputLayer[i] += hiddenLayers[lastLayer][j] * outputWeights[i][j];
+			for(int lastNeuron = 0; lastNeuron < hiddenLayers[lastLayer].length; lastNeuron++) {
+				outputLayer[neuron] += outputWeights[neuron][lastNeuron] * hiddenLayers[lastLayer][lastNeuron];
 			}
-			outputLayer[i] = calcSigmoid(outputLayer[i]);
+			outputLayer[neuron] = calcSigmoid(outputLayer[neuron]);
 		}
 		return outputLayer;
 	}
