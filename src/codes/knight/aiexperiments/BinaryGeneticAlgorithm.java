@@ -39,7 +39,7 @@ public class BinaryGeneticAlgorithm {
 			return this;
 		}
 
-		private String simplePointCrossOver(String a, String b) {
+		private String singlePointCrossOver(String a, String b) {
 			int point = m_random.nextInt(a.length());
 
 			StringBuilder binaryChildBuilder = new StringBuilder();
@@ -99,7 +99,7 @@ public class BinaryGeneticAlgorithm {
 
 			assert binaryA.length() == binaryB.length();
 
-			String childBinary = simplePointCrossOver(binaryA, binaryB);
+			String childBinary = uniformCrossOver(binaryA, binaryB);
 
 			return Network.fromString(childBinary, a.getNetwork());
 		}

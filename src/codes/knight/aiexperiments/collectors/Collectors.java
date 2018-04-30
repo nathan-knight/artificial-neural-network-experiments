@@ -235,14 +235,15 @@ public class Collectors extends JFrame implements Runnable {
 		bbg.clearRect(0, 0, getWidth(), getHeight());
 
 		for(Collector collector : m_collectors) {
-			float angle = collector.getAngle();
 			float x = collector.getX();
 			float y = collector.getY();
 
+			collector.draw(bbg);
+
 			if (m_showNearestLine && !collector.hasCoin()) {
 				// Draw a line to the nearest coin
-				Coin coin = findNearestCoin(collector);
-				bbg.drawLine(coin.getX(), coin.getY(), collector.getX(), collector.getY());
+				Coin coin = collector.findNearest(m_coins);
+				bbg.drawLine(coin.getX(), coin.getY(), (int) x, (int) y);
 
 				if (m_showAngleToCoin) {
 					// Draw the angle to the coin
@@ -251,7 +252,6 @@ public class Collectors extends JFrame implements Runnable {
 							x - 15, y - 15);
 				}
 			}
-			collector.draw(bbg);
 		}
 
 		for(Coin coin : m_coins) {

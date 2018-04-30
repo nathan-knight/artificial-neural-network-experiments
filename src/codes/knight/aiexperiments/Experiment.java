@@ -5,6 +5,12 @@ import codes.knight.aiexperiments.collectors.Collectors;
 public class Experiment {
 	
 	public static void main(String args[]) {
+		if ("collectors".equalsIgnoreCase(args[0])) {
+			launchCollectors(args);
+		}
+	}
+
+	private static void launchCollectors(String[] args) {
 		Collectors collectors = new Collectors();
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i].toLowerCase()) {

@@ -36,6 +36,7 @@ public class Collector extends GameObject implements Agent {
 
 	private static final int DRAW_SIZE = 10;
 	private static final int DRAW_COIN_SIZE = 8;
+	private static final int COLOR_FLOOR = 0x33333;
 
 	public Collector(int inputs, int hiddenLayers, int neuronsPerLayer) {
 		super(0, 0);
@@ -122,7 +123,7 @@ public class Collector extends GameObject implements Agent {
 		float dY = (float) Math.sin(getAngle()) * output[1];
 		move(dX, dY);
 
-		setColor(new Color((int)(output[2] * 16777216)));
+		setColor(new Color((int)(output[2] * (16777216 - COLOR_FLOOR)) + COLOR_FLOOR));
 
 		//Keep in boundaries
 		if(getX() < 0) setX(0);
