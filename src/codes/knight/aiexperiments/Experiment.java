@@ -1,13 +1,25 @@
 package codes.knight.aiexperiments;
 
 import codes.knight.aiexperiments.collectors.Collectors;
+import codes.knight.aiexperiments.colorgraph.ColorGraph;
 
 public class Experiment {
 	
 	public static void main(String args[]) {
-		if ("collectors".equalsIgnoreCase(args[0])) {
-			launchCollectors(args);
+		if (args.length == 0) {
+			System.out.println("No arguments specified! Please specify --collectors or --colorgraph");
 		}
+		if ("collectors".equalsIgnoreCase(args[0]) || "--collectors".equalsIgnoreCase(args[0])) {
+			launchCollectors(args);
+		} else if ("--colorgraph".equalsIgnoreCase(args[0])) {
+			launchColorGraph(args);
+		}
+	}
+
+	private static void launchColorGraph(String[] args) {
+		ColorGraph colorGraph = new ColorGraph();
+
+		colorGraph.start();
 	}
 
 	private static void launchCollectors(String[] args) {

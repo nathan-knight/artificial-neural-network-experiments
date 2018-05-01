@@ -111,7 +111,9 @@ public class Collector extends GameObject implements Agent {
 		}
 
 		if (gameObj.usesNeighbourAwareness()) {
-			networkInput[neuron++] = angleTo(findNearest(collectors));
+			Collector nearest = findNearest(collectors);
+			networkInput[neuron++] = angleTo(nearest);
+			networkInput[neuron++] = distanceTo(nearest);
 		}
 
 		networkInput[neuron] = angleTo(nearestCoin);
@@ -152,8 +154,7 @@ public class Collector extends GameObject implements Agent {
 	public float angleTo(GameObject other) {
 		float angle = other == null
 				? 0
-				: (float) ((Math.atan2(getY() - other.getY(),
-				getX() - other.getX()) - getAngle() - Math.PI));
+				: (float) ((Math.atan2(getY() - other.getY(), getX() - other.getX()) - getAngle() - Math.PI));
 		if (angle < -Math.PI) angle += 2 * Math.PI;
 		return angle;
 	}

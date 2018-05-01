@@ -20,7 +20,7 @@ public class Collectors extends JFrame implements Runnable {
 	private static final long serialVersionUID = 1L;
 
 	private static final String SAVED_AGENT_FILE_PREFIX = "Saves/agents_collectors_";
-	public static final int TICKS_PER_GENERATION = 20000;
+	public static final int TICKS_PER_GENERATION = 10000;
 	private static final int GENERATIONS_PER_AUTOSAVE = 10;
 	private static final int FRAME_RATE_CAP = 60;
 
@@ -150,6 +150,7 @@ public class Collectors extends JFrame implements Runnable {
 		if (m_neighborAware) {
 			if (usesSpecial) sb.append("_");
 			sb.append("neighbour");
+			usesSpecial = true;
 		}
 
 		if (!usesSpecial) {
@@ -168,7 +169,7 @@ public class Collectors extends JFrame implements Runnable {
 		int count = 1;
 
 		if (usesCenterDropOff()) count += 2;
-		if (usesNeighbourAwareness()) count++;
+		if (usesNeighbourAwareness()) count += 2;
 
 		return count;
 	}
@@ -267,32 +268,6 @@ public class Collectors extends JFrame implements Runnable {
 		bbg.drawString("FPS: " + m_lastFPS, 30, this.getHeight() - 30);
 
 		g.drawImage(m_backbuffer, 0, 0, this);
-	}
-	
-	private Coin findNearestCoin(Collector collector) {
-		Coin nearestCoin = null;
-		float bestDistance = Float.MAX_VALUE;
-		Coin toRemove = null;
-		for(Coin coin : m_coins) {
-			float distance = coin.distanceTo(collector);
-			if(nearestCoin == null || distance < bestDistance) {
-				bestDistance = distance;
-				nearestCoin = coin;
-			}
-			if(!collector.hasCoin() && distance < 10) {
-				if (m_useCenterDropOff) {
-					collector.setHasCoin(true);
-					toRemove = coin;
-				} else {
-					coin.setX((int) (Math.random() * this.getWidth()));
-					coin.setY((int) (Math.random() * this.getHeight()));
-				}
-				collector.adjustFitness(0.3f);
-				break;
-			}
-		}
-		if(toRemove != null) m_coins.remove(toRemove);
-		return nearestCoin;
 	}
 
 	private float round(float f) {

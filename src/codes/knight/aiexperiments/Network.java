@@ -75,7 +75,9 @@ public class Network {
 	}
 	
 	public float[] run(float input[]) {
+		// Insert input into the input layer
 		System.arraycopy(input, 0, inputLayer, 0, inputLayer.length);
+
 		//Feed to first layer from input
 		for(int neuron = 0; neuron < hiddenLayers[0].length; neuron++) {
 			for(int inputNeuron = 0; inputNeuron < inputLayer.length; inputNeuron++) {
@@ -83,6 +85,7 @@ public class Network {
 			}
 			hiddenLayers[0][neuron] = calcSigmoid(hiddenLayers[0][neuron]);
 		}
+
 		//Feed to hidden layers
 		for(int layer = 1; layer < hiddenLayers.length; layer++) {
 			for(int neuron = 0; neuron < hiddenLayers[layer].length; neuron++) {
