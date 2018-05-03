@@ -3,6 +3,7 @@ package codes.knight.aiexperiments.collectors;
 import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.gamecore.Agent;
 import codes.knight.aiexperiments.gamecore.GameObject;
+import net.jafama.FastMath;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -29,14 +30,11 @@ public class Collector extends GameObject implements Agent {
 	private Color m_color = Color.WHITE;
 	private float m_angle;
 
-	private static final int INPUT_NEURON_COUNT = 1;
-	private static final int HIDDEN_LAYER_COUNT = 1;
-	private static final int NEURONS_PER_LAYER = 3;
 	private static final int OUTPUT_NEURON_COUNT = 3;
 
 	private static final int DRAW_SIZE = 10;
 	private static final int DRAW_COIN_SIZE = 8;
-	private static final int COLOR_FLOOR = 0x33333;
+	private static final int COLOR_CEILING = 0xCCCCCC;
 
 	public Collector(int inputs, int hiddenLayers, int neuronsPerLayer) {
 		super(0, 0);
@@ -77,8 +75,8 @@ public class Collector extends GameObject implements Agent {
 		bbg.draw(rectPath);
 	}
 
-	public void tick(Collectors gameObj, int width, int height, List<Coin> coins, List<Collector> collectors, GameObject center) {
-		adjustFitness(-1 / Collectors.TICKS_PER_GENERATION);
+	public void tick(CollectorsExperiment gameObj, int width, int height, List<Coin> coins, List<Collector> collectors, GameObject center) {
+		adjustFitness(-1 / CollectorsExperiment.TICKS_PER_GENERATION);
 
 		Coin nearestCoin = GameObject.findNearest(this, coins);
 
@@ -125,7 +123,7 @@ public class Collector extends GameObject implements Agent {
 		float dY = (float) Math.sin(getAngle()) * output[1];
 		move(dX, dY);
 
-		setColor(new Color((int)(output[2] * (16777216 - COLOR_FLOOR)) + COLOR_FLOOR));
+		setColor(new Color((int)(output[2] * (16777216 - COLOR_CEILING))));
 
 		//Keep in boundaries
 		if(getX() < 0) setX(0);
@@ -154,7 +152,7 @@ public class Collector extends GameObject implements Agent {
 	public float angleTo(GameObject other) {
 		float angle = other == null
 				? 0
-				: (float) ((Math.atan2(getY() - other.getY(), getX() - other.getX()) - getAngle() - Math.PI));
+				: (float) ((FastMath.atan2(getY() - other.getY(), getX() - other.getX()) - getAngle() - Math.PI));
 		if (angle < -Math.PI) angle += 2 * Math.PI;
 		return angle;
 	}

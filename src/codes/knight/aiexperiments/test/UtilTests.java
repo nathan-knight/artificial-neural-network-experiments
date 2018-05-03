@@ -1,5 +1,5 @@
 import codes.knight.aiexperiments.Network;
-import codes.knight.aiexperiments.Utils;
+import codes.knight.aiexperiments.utils.Utils;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;

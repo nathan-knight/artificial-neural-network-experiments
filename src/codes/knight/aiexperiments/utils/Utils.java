@@ -1,5 +1,6 @@
-package codes.knight.aiexperiments;
+package codes.knight.aiexperiments.utils;
 
+import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.gamecore.Agent;
 
 import java.io.IOException;

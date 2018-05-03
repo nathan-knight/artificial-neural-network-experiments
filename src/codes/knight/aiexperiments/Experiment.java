@@ -1,6 +1,6 @@
 package codes.knight.aiexperiments;
 
-import codes.knight.aiexperiments.collectors.Collectors;
+import codes.knight.aiexperiments.collectors.CollectorsExperiment;
 import codes.knight.aiexperiments.colorgraph.ColorGraph;
 
 public class Experiment {
@@ -23,30 +23,30 @@ public class Experiment {
 	}
 
 	private static void launchCollectors(String[] args) {
-		Collectors collectors = new Collectors();
+		CollectorsExperiment collectorsExperiment = new CollectorsExperiment();
 		for (int i = 0; i < args.length; i++) {
 			switch (args[i].toLowerCase()) {
 				case "-l":
 				case "--layers":
-					collectors.setNumberOfHiddenLayers(Integer.valueOf(args[++i]));
+					collectorsExperiment.setNumberOfHiddenLayers(Integer.valueOf(args[++i]));
 					break;
 				case "-n":
 				case "--neurons":
-					collectors.setNeuronsPerHiddenLayer(Integer.valueOf(args[++i]));
+					collectorsExperiment.setNeuronsPerHiddenLayer(Integer.valueOf(args[++i]));
 					break;
 				case "--draw-nearest-line":
-					collectors.setShowNearestLine(true);
+					collectorsExperiment.setShowNearestLine(true);
 					break;
 				case "--use-center":
-					collectors.enableCenterDropOff();
+					collectorsExperiment.enableCenterDropOff();
 					break;
 				case "--use-nearest-neighbour":
 				case "--use-nearest-neighbor":
-					collectors.enableNeighbourAwareness();
+					collectorsExperiment.enableNeighbourAwareness();
 					break;
 			}
 		}
-		collectors.start();
+		collectorsExperiment.start();
 	}
 
 }

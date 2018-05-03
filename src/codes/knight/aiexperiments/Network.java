@@ -1,5 +1,7 @@
 package codes.knight.aiexperiments;
 
+import codes.knight.aiexperiments.utils.Utils;
+
 import java.util.Arrays;
 import java.util.Random;
 

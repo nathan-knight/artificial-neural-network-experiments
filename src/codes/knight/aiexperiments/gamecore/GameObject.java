@@ -43,6 +43,7 @@ public abstract class GameObject {
 		T nearest = null;
 		float bestDistance = Float.MAX_VALUE;
 		for (T obj : searchObjects) {
+			if (obj == object) continue;
 			float distance = object.distanceTo(obj);
 			if (distance < bestDistance) {
 				nearest = obj;
