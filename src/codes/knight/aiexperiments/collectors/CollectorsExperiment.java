@@ -12,6 +12,7 @@ import java.util.List;
 import javax.swing.*;
 
 import codes.knight.aiexperiments.BinaryGeneticAlgorithm;
+import codes.knight.aiexperiments.Experiment;
 import codes.knight.aiexperiments.Network;
 import codes.knight.aiexperiments.utils.Utils;
 
@@ -26,6 +27,7 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 
 	private Thread m_masterThread;
 	private boolean running = true;
+	private boolean paused = false;
 	private long m_targetTickCount = 0;
 	private BufferedImage m_backbuffer;
 
@@ -61,6 +63,7 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 		private long m_tickCount = 0;
 		private int m_localTicksThisSecond = 0;
 		private int m_lastFPS = 0;
+		private int m_pauseTicksRemaining = 0;
 
 		private CollectorsExperiment m_experiment;
 
@@ -123,6 +126,13 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 		private void tick() {
 			m_center.setX(getWidth() / 2);
 			m_center.setY(getHeight() / 2);
+			if (paused) {
+				if (m_pauseTicksRemaining > 0) {
+					m_pauseTicksRemaining--;
+				} else {
+					return;
+				}
+			}
 			for(Collector collector : m_collectors) {
 				collector.tick(m_experiment, getWidth(), getHeight(), m_coins, m_collectors, m_center);
 			}
@@ -176,6 +186,10 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 
 			g.drawImage(m_backbuffer, 0, 0, m_experiment);
 		}
+
+		public void addPauseTick() {
+			m_pauseTicksRemaining++;
+		}
 	}
 
 	public CollectorsExperiment() {
@@ -199,6 +213,14 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 				}
 				if (event.getKeyCode() == KeyEvent.VK_LEFT) {
 					viewPreviousSimulation();
+				}
+				if (event.getKeyCode() == KeyEvent.VK_SPACE) {
+					paused = !paused;
+				}
+				if (event.getKeyCode() == KeyEvent.VK_PERIOD) {
+					for (Collectors c : m_collectorsInstances) {
+						c.addPauseTick();
+					}
 				}
 			}
 			@Override
@@ -372,6 +394,7 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 			Collector collector = new Collector(getInputNeuronCount(), m_hiddenLayers, m_neuronsPerHiddenLayer);
 			collector.setX((int) (Math.random() * this.getWidth()));
 			collector.setY((int) (Math.random() * this.getHeight()));
+			collector.adjustFitness(-1);
 			collectors.add(collector);
 		}
 	}
@@ -384,10 +407,12 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 				String line = br.readLine();
 				generations = Integer.valueOf(line);
 				while ((line = br.readLine()) != null) {
-					collectors.add(new Collector(line, getInputNeuronCount(),
+					Collector collector = new Collector(line, getInputNeuronCount(),
 							m_hiddenLayers, m_neuronsPerHiddenLayer,
 							(float) Math.random() * this.getWidth(),
-							(float) Math.random() * this.getHeight()));
+							(float) Math.random() * this.getHeight());
+					collector.adjustFitness(-1);
+					collectors.add(collector);
 				}
 				System.out.println("Loaded " + collectors.size() + " collectors from disk");
 			} catch (IOException e) {
@@ -416,6 +441,7 @@ public class CollectorsExperiment extends JFrame implements Runnable {
 		ArrayList<Collector> nextGen = new ArrayList<>();
 		for(Network n : nextGenNetworks) {
 			Collector c = new Collector(n, (float) Math.random() * this.getWidth(), (float) Math.random() * this.getHeight());
+			c.adjustFitness(-1);
 			nextGen.add(c);
 		}
 		collectors.clear();

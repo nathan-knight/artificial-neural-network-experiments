@@ -32,9 +32,10 @@ public class Collector extends GameObject implements Agent {
 
 	private static final int OUTPUT_NEURON_COUNT = 3;
 
-	private static final int DRAW_SIZE = 10;
-	private static final int DRAW_COIN_SIZE = 8;
-	private static final int COLOR_CEILING = 0xCCCCCC;
+	private static final int   DRAW_SIZE = 10;
+	private static final int   DRAW_COIN_SIZE = 8;
+	private static final float COLOR_CEILING = 0xCCCCCC;
+	private static final float COLOR_FLOOR = 0x333333;
 
 	public Collector(int inputs, int hiddenLayers, int neuronsPerLayer) {
 		super(0, 0);
@@ -76,7 +77,6 @@ public class Collector extends GameObject implements Agent {
 	}
 
 	public void tick(CollectorsExperiment gameObj, int width, int height, List<Coin> coins, List<Collector> collectors, GameObject center) {
-		adjustFitness(-1 / CollectorsExperiment.TICKS_PER_GENERATION);
 
 		Coin nearestCoin = GameObject.findNearest(this, coins);
 
@@ -123,7 +123,8 @@ public class Collector extends GameObject implements Agent {
 		float dY = (float) Math.sin(getAngle()) * output[1];
 		move(dX, dY);
 
-		setColor(new Color((int)(output[2] * (16777216 - COLOR_CEILING))));
+		float newColor = Math.min(Math.max(output[2] * 16777216f, COLOR_FLOOR), COLOR_CEILING);
+		setColor(new Color((int) newColor));
 
 		//Keep in boundaries
 		if(getX() < 0) setX(0);
